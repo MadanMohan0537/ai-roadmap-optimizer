@@ -1,0 +1,1 @@
+{"name":"ai-roadmap-optimizer","version":"1.0.0","private":true,"type":"module","engines":{"node":">=20"},"scripts":{"test":"node --test","check":"node --check src/optimizer.js && node --check src/worker.js && node --check public/app.js"}}

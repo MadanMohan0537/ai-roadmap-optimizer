@@ -1,0 +1,12 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {readFileSync} from 'node:fs';import {compare,optimize,validate} from '../src/optimizer.js';import worker from '../src/worker.js';
+const fixture=()=>JSON.parse(readFileSync(new URL('../examples/backlog.json',import.meta.url)));
+test('builds a feasible dependency-aware roadmap',()=>{const p=optimize(fixture());const byId=new Map(p.items.map(x=>[x.id,x]));assert.ok(byId.get('onboarding').start>byId.get('identity').end)});
+test('never exceeds capacity',()=>{const p=optimize(fixture());for(const values of Object.values(p.utilization))assert.ok(values.every(x=>x>=0&&x<=1))});
+test('compares five objectives',()=>assert.equal(compare(fixture()).length,5));
+test('is deterministic',()=>assert.deepEqual(optimize(fixture(),'revenue'),optimize(fixture(),'revenue')));
+test('rejects cycles',()=>{const x=fixture();x.features[0].dependencies=['billing'];assert.throws(()=>validate(x),/cycle/)});
+test('rejects impossible mandatory plan',()=>{const x=fixture();x.teams.forEach(t=>t.capacity=1);assert.throws(()=>optimize(x),/No feasible/)});
+test('deadline is a hard constraint',()=>{const x=fixture();x.features.find(f=>f.id==='identity').deadline=1;assert.throws(()=>optimize(x),/No feasible/)});
+test('excluded dependency prevents dependent selection',()=>{const x=fixture();x.features[0].excluded=true;x.features[0].mandatory=false;const p=optimize(x);assert.ok(!p.items.some(i=>i.id==='onboarding'))});
+test('worker validates requests',async()=>{const r=await worker.fetch(new Request('https://x/api/optimize',{method:'POST',headers:{'content-type':'application/json'},body:'{}'}),{});assert.equal(r.status,422)});
+test('worker returns optimized result',async()=>{const r=await worker.fetch(new Request('https://x/api/optimize',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(fixture())}),{});assert.equal(r.status,200);assert.equal((await r.json()).scenario,'balanced')});
