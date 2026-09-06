@@ -1,157 +1,213 @@
+<div align="center">
+
 # AI Roadmap Optimizer
 
+**Turn a feature backlog into feasible, strategy-aware delivery scenarios.**
+
 [![Verify](https://github.com/MadanMohan0537/ai-roadmap-optimizer/actions/workflows/ci.yml/badge.svg)](https://github.com/MadanMohan0537/ai-roadmap-optimizer/actions/workflows/ci.yml)
+[![Cloudflare Workers](https://img.shields.io/badge/runtime-Cloudflare%20Workers-F38020)](https://developers.cloudflare.com/workers/)
+[![License: MIT](https://img.shields.io/badge/license-MIT-2563EB.svg)](LICENSE)
 
-A constraint-aware product roadmap workspace that chooses **what fits, when it fits, and why it changes across strategies**. It replaces manual drag-and-drop ordering with a deterministic optimization model while keeping business estimates and final decisions with the product team.
+</div>
 
-```text
-Feature backlog → Validate constraints → Score scenarios → Select feasible work
-                → Schedule by team → Compare roadmaps → Human approval
-```
+Most roadmap tools help teams order a list. This project solves a harder problem: **which initiatives fit, in what sequence, under real delivery constraints?**
 
-## Example result
+The optimizer evaluates customer impact, revenue opportunity, retention, strategic alignment, confidence, delivery risk and deadlines. It creates capacity-feasible schedules while enforcing dependencies, mandatory commitments and exclusions.
 
-Given a mandatory identity foundation, a revenue-focused billing feature, a retention-focused lifecycle feature, and limited capacity across Platform and Growth, the application produces five different feasible schedules. Each result shows:
+~~~text
+Feature backlog
+      ↓
+Validate inputs and dependency graph
+      ↓
+Score five strategic scenarios
+      ↓
+Select feasible initiative portfolios
+      ↓
+Schedule work against team capacity
+      ↓
+Compare roadmaps and approve deliberately
+~~~
 
-- selected work and delivery periods;
-- prerequisite ordering;
-- per-team utilization;
-- the scenario objective value; and
-- features left out because they did not fit the selected strategy and capacity.
+## Product experience
 
-The result is a recommendation built from supplied assumptions—not a commitment and not an automatically generated business forecast.
+The responsive workspace opens directly on the planning task:
 
-## Why this product is viable
+1. Define teams and capacity per planning period.
+2. Add feature effort, value signals, risk, deadlines and dependencies.
+3. Run one objective or compare all five.
+4. Review scheduled and omitted initiatives.
+5. Inspect delivery periods and team utilization.
 
-Roadmaps combine selection and scheduling. A high-scoring feature may still be impossible to start because a prerequisite is unfinished, its team has no capacity, or its deadline cannot be met. The optimizer treats those as hard constraints and uses scoring only to choose among feasible plans.
+It supports light and dark browser themes and ships with a synthetic backlog that can be optimized immediately.
 
-The MVP compares five objectives:
+## Strategy scenarios
 
-| Scenario | Emphasis |
+| Scenario | What it emphasizes |
 |---|---|
-| Balanced | Broad product value |
-| Growth | Customer impact and strategy |
-| Revenue | Revenue opportunity |
-| Retention | Retention impact |
-| Low risk | Confidence and delivery risk |
+| **Balanced** | Broad product value across every input |
+| **Growth** | Customer impact and strategic alignment |
+| **Revenue** | Revenue opportunity |
+| **Retention** | Retention impact |
+| **Low risk** | Confidence and lower delivery risk |
+
+Scenario weights are transparent policy choices in [src/optimizer.js](src/optimizer.js). They are not learned facts.
 
 ## What is implemented
 
-- Exact subset enumeration for up to 22 features, with a safety limit of 20 optional features
-- Dependency-cycle validation and automatic prerequisite inclusion
-- Per-team, per-period capacity scheduling
-- Hard mandatory, excluded and deadline constraints
-- Balanced, growth, revenue, retention and low-risk scenarios
-- Log-normalized revenue so one large estimate does not linearly dominate every plan
-- Deterministic tie-breaking, utilization data and explicit unscheduled reasons
-- Responsive light/dark working interface
-- Cloudflare Worker API with no paid model or external runtime dependency
-- Optional Google OR-Tools CP-SAT reference model for larger offline experiments
-- Core and HTTP tests
+- Exact subset enumeration within a bounded MVP search space
+- Dependency-cycle detection and prerequisite closure
+- Per-team, per-period capacity allocation
+- Hard mandatory, excluded, deadline and planning-horizon constraints
+- Five deterministic scenario objectives
+- Log-normalized revenue to reduce domination by one large estimate
+- Stable tie-breaking and explicit unscheduled-item reasons
+- Utilization output for every team and period
+- Stateless Cloudflare Worker API
+- Responsive, dependency-free browser interface
+- Optional Google OR-Tools CP-SAT reference implementation
+- Core, validation and HTTP tests in GitHub Actions
 
-The browser/Worker solver reports optimality only for the subsets it enumerates. Its precedence-aware scheduler is deterministic, but it does not claim globally optimal start dates across every possible resource allocation. The optional CP-SAT model is deliberately separate and is not silently presented as the Cloudflare implementation.
+## Example input
 
-## Quick start
-
-```bash
-git clone https://github.com/MadanMohan0537/ai-roadmap-optimizer.git
-cd ai-roadmap-optimizer
-npm test
-npm run check
-npx wrangler dev
-```
-
-Open the local address, load the sample, and compare scenarios. No `npm install` is required for the test suite itself; Wrangler is needed only for local Worker development or deployment.
-
-## Input contract
-
-```json
+~~~json
 {
   "horizon": 6,
-  "teams": [{"id": "platform", "capacity": 8}],
-  "features": [{
-    "id": "billing",
-    "name": "Self-serve billing",
-    "team": "platform",
-    "effort": 14,
-    "impact": 7,
-    "revenue": 1000000,
-    "retention": 4,
-    "strategy": 7,
-    "confidence": 0.8,
-    "risk": 5,
-    "deadline": 5,
-    "dependencies": ["identity"],
-    "mandatory": false,
-    "excluded": false
-  }]
+  "teams": [
+    {"id": "platform", "capacity": 8},
+    {"id": "growth", "capacity": 6}
+  ],
+  "features": [
+    {
+      "id": "identity",
+      "name": "Identity foundation",
+      "team": "platform",
+      "effort": 10,
+      "impact": 6,
+      "revenue": 100000,
+      "retention": 5,
+      "strategy": 9,
+      "confidence": 0.9,
+      "risk": 3,
+      "mandatory": true
+    },
+    {
+      "id": "onboarding",
+      "name": "Adaptive onboarding",
+      "team": "growth",
+      "effort": 12,
+      "impact": 9,
+      "revenue": 650000,
+      "retention": 8,
+      "strategy": 8,
+      "confidence": 0.75,
+      "risk": 4,
+      "deadline": 5,
+      "dependencies": ["identity"]
+    }
+  ]
 }
-```
+~~~
 
-Effort and capacity must share one unit, such as engineering points per two-week period. Impact, retention, strategy and risk use `0–10`; confidence uses `0–1`. Revenue is a scenario input, not a forecast produced by the application.
+Effort and capacity must use the same unit, such as engineering points per two-week period. Impact, retention, strategy and risk use 0–10; confidence uses 0–1.
 
-## Optimization model
+The output contains the selected scenario, objective value, scheduled initiatives, delivery periods, omitted work, team utilization, solver diagnostics and assumptions.
 
-For feature \(i\), the scenario utility is a weighted sum of customer impact, log-normalized revenue, retention, strategic alignment, confidence, inverse risk and deadline importance:
+## Run locally
+
+Requirements: Node.js 20 or later.
+
+~~~bash
+git clone https://github.com/MadanMohan0537/ai-roadmap-optimizer.git
+cd ai-roadmap-optimizer
+node --test
+node --check src/optimizer.js
+npx wrangler dev
+~~~
+
+Open the Wrangler development URL and select **Load sample**.
+
+## API
+
+| Endpoint | Purpose |
+|---|---|
+| POST /api/optimize | Optimize one scenario or compare all five |
+| GET /api/health | Check Worker availability |
+
+Add scenario as balanced, growth, revenue, retention, lowRisk or compare. Invalid and infeasible inputs return HTTP 422 with a specific message.
+
+## Optimization contract
+
+For feature \(i\), the scenario utility is:
 
 \[
 U_i = \sum_k w_k x_{ik}
 \]
 
-The solver maximizes selected utility subject to prerequisite closure, team capacity, exclusions, mandatory commitments, deadlines and the planning horizon. Full definitions, limitations and future OR-Tools formulation are in [the architecture](docs/ARCHITECTURE.md).
+Revenue is log-normalized within the submitted backlog, risk is inverted, and every other factor remains on its documented scale. The solver maximizes selected utility while enforcing known acyclic dependencies, prerequisite inclusion, per-period team capacity, commitments, exclusions, deadlines and the horizon.
 
-## API
+Read [the architecture](docs/ARCHITECTURE.md) for the complete mathematical contract.
 
-`POST /api/optimize` accepts the input contract plus `scenario`. Use `compare` to return every scenario. `GET /api/health` is public. Invalid or infeasible inputs return `422` with a specific message.
+## Honest optimality boundary
 
-This MVP has no persistent customer data and no authentication because optimization is stateless. Before adding saved proprietary roadmaps, add identity, tenant isolation, authorization and retention controls. Configure Cloudflare rate limiting before exposing the endpoint broadly.
+The Worker exhaustively evaluates the allowed feature subsets, but uses a deterministic precedence-aware scheduling heuristic for each subset. It reports optimality only for the enumerated search, not global optimality across every theoretically possible schedule.
 
-## Optional OR-Tools solver
+The edge solver accepts at most 22 total features and 20 optional features. This is an intentional safety bound for exponential enumeration and Cloudflare runtime limits.
 
-Google OR-Tools is open source and appropriate when the backlog grows beyond bounded browser enumeration or needs richer scheduling constraints. The included Python model demonstrates optional intervals, precedence, deadlines and a ten-second solve limit:
+## Optional OR-Tools model
 
-```bash
+The repository includes a separate CP-SAT reference for larger offline studies:
+
+~~~bash
 python -m venv .venv
 pip install -r requirements.txt
 python python/ortools_solver.py examples/backlog.json
-```
+~~~
 
-The reference model currently uses simplified full-capacity, contiguous tasks and a compact objective. Its output should not be compared numerically with the Worker solver until both objective definitions are aligned.
+The reference currently assumes contiguous, full-team task allocation and uses a simplified objective. Its score is not directly comparable with the Worker solver.
 
-## Research decisions
+## Cloudflare deployment
 
-- OR-Tools models job-shop scheduling with precedence and resource exclusivity, which matches roadmap dependencies and constrained teams.
-- Knapsack models explain why high-value work may be left out when capacity is limited.
-- CP-SAT operates on integer coefficients, so production score scales should be explicit and tested.
-- Google recommends solve-time limits for potentially expensive constraint models.
-- WSJF informed the inclusion of value, time sensitivity and job size, but this product does not label its multi-factor objective as WSJF.
-- Cloudflare Workers have bounded CPU and 128 MB isolate memory, motivating a guarded MVP input size and an offline solver for larger studies.
+~~~bash
+npx wrangler deploy
+~~~
 
-Sources: [OR-Tools scheduling](https://developers.google.com/optimization/scheduling), [job-shop model](https://developers.google.com/optimization/scheduling/job_shop), [knapsack](https://developers.google.com/optimization/pack/knapsack), [CP-SAT](https://developers.google.com/optimization/cp/cp_solver), [solve limits](https://developers.google.com/optimization/cp/cp_tasks), [WSJF](https://framework.scaledagile.com/wsjf), and [Cloudflare Worker limits](https://developers.cloudflare.com/workers/platform/limits/).
+The MVP is stateless and stores no customer roadmap data. Before introducing saved roadmaps, add authentication, tenant isolation, authorization, retention controls and durable storage. Configure rate limiting before broad public exposure.
 
-## Product boundaries
+## Repository structure
 
-- Optimization cannot repair unreliable impact, revenue or effort estimates.
-- Scenario weights are transparent policy choices, not learned truth.
-- Cross-team staffing, partial allocation, uncertainty simulation, calendar dates and multi-quarter carryover are not yet modeled.
-- The system recommends a feasible roadmap; accountable leaders approve it.
-- “AI” is reserved for a future explanation layer. The current explanations are deterministic and evidence-based.
+~~~text
+.
+├── src/                 Optimizer and Worker API
+├── public/              Responsive product interface
+├── python/              Optional OR-Tools reference solver
+├── tests/               Core and HTTP tests
+├── examples/            Synthetic runnable backlog
+├── docs/                PRD, strategy, metrics and architecture
+├── wrangler.jsonc       Cloudflare configuration
+└── README.md
+~~~
+
+## Documentation
+
+- [Product requirements](docs/PRD.md)
+- [Architecture and mathematical contract](docs/ARCHITECTURE.md)
+- [Product strategy](docs/PRODUCT_STRATEGY.md)
+- [Success metrics](docs/METRICS.md)
 
 ## Relationship to ProdMind
 
-This repository is the planning companion to [ProdMind](https://github.com/MadanMohan0537/prodmind). ProdMind turns customer evidence into reviewed and prioritized opportunities; this optimizer can take approved initiatives, team capacity and dependencies and convert them into comparable delivery scenarios. The handoff is currently documented rather than automated, so neither repository claims live synchronization.
+[ProdMind](https://github.com/MadanMohan0537/prodmind) converts customer evidence into reviewed and prioritized opportunities. This optimizer is its planning companion: it converts approved initiatives, dependencies and team capacity into delivery scenarios.
 
-## Repository map
+The current handoff is documented, not automatically synchronized.
 
-```text
-src/             Optimization engine and Worker
-public/          Responsive product interface
-python/          Optional OR-Tools CP-SAT reference
-tests/           Deterministic and HTTP tests
-examples/        Synthetic backlog
-docs/            PRD, architecture, metrics and strategy
-```
+## Limitations
+
+- The optimizer cannot correct unreliable impact, revenue or effort estimates.
+- Cross-team staffing, split allocation, uncertainty simulation and calendar dates are not modeled.
+- A feasible roadmap is not proof of commercial impact.
+- Accountable product and engineering leaders remain responsible for approval.
+- The current product uses deterministic optimization. A future AI explanation layer should cite actual score and constraint changes.
 
 ## License
 
-MIT. See [LICENSE](LICENSE).
+[MIT](LICENSE)
