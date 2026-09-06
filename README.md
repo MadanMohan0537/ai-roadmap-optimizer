@@ -1,6 +1,25 @@
 # AI Roadmap Optimizer
 
+[![Verify](https://github.com/MadanMohan0537/ai-roadmap-optimizer/actions/workflows/ci.yml/badge.svg)](https://github.com/MadanMohan0537/ai-roadmap-optimizer/actions/workflows/ci.yml)
+
 A constraint-aware product roadmap workspace that chooses **what fits, when it fits, and why it changes across strategies**. It replaces manual drag-and-drop ordering with a deterministic optimization model while keeping business estimates and final decisions with the product team.
+
+```text
+Feature backlog → Validate constraints → Score scenarios → Select feasible work
+                → Schedule by team → Compare roadmaps → Human approval
+```
+
+## Example result
+
+Given a mandatory identity foundation, a revenue-focused billing feature, a retention-focused lifecycle feature, and limited capacity across Platform and Growth, the application produces five different feasible schedules. Each result shows:
+
+- selected work and delivery periods;
+- prerequisite ordering;
+- per-team utilization;
+- the scenario objective value; and
+- features left out because they did not fit the selected strategy and capacity.
+
+The result is a recommendation built from supplied assumptions—not a commitment and not an automatically generated business forecast.
 
 ## Why this product is viable
 
@@ -117,6 +136,10 @@ Sources: [OR-Tools scheduling](https://developers.google.com/optimization/schedu
 - Cross-team staffing, partial allocation, uncertainty simulation, calendar dates and multi-quarter carryover are not yet modeled.
 - The system recommends a feasible roadmap; accountable leaders approve it.
 - “AI” is reserved for a future explanation layer. The current explanations are deterministic and evidence-based.
+
+## Relationship to ProdMind
+
+This repository is the planning companion to [ProdMind](https://github.com/MadanMohan0537/prodmind). ProdMind turns customer evidence into reviewed and prioritized opportunities; this optimizer can take approved initiatives, team capacity and dependencies and convert them into comparable delivery scenarios. The handoff is currently documented rather than automated, so neither repository claims live synchronization.
 
 ## Repository map
 
