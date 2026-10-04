@@ -10,6 +10,16 @@
 
 </div>
 
+## Review feasibility before ranking
+
+Use an included [example](examples/) and compare strategy scenarios. Check omitted initiatives, dependency ordering, capacity consumption and deadline conflicts before selecting a roadmap.
+
+The core implementation is in [optimizer.js](src/optimizer.js); [worker.js](src/worker.js) exposes the application. The Node manifest includes `npm run check` and `npm test`, but no `dev` script. Follow the explicit Wrangler command in the local-run section below.
+
+Scores express configured strategy preferences. They do not prove future revenue or globally optimal delivery. The optional [Python model](python/) has its own dependencies and is distinct from the JavaScript runtime.
+
+
+
 Most roadmap tools help teams order a list. This project solves a harder problem: **which initiatives fit, in what sequence, under real delivery constraints?**
 
 The optimizer evaluates customer impact, revenue opportunity, retention, strategic alignment, confidence, delivery risk and deadlines. It creates capacity-feasible schedules while enforcing dependencies, mandatory commitments and exclusions.
